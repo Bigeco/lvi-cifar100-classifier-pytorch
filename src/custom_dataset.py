@@ -20,9 +20,7 @@ class CifarDataset(Dataset):
         return self.data.classes
     
     def __getitem__(self, idx):
-        image = self.data.data[idx]
-        label = self.data.targets[idx]
-        return image, label
+        return self.data.__getitem__(idx)
 
     def __showimg__(self, idx):
         npimg = self.data.data[idx]
@@ -31,7 +29,7 @@ class CifarDataset(Dataset):
 
 transform = transforms.Compose([
     transforms.ToTensor(),
-    # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
 trainset = CifarDataset(root='./data', transform=transform, train=True)
