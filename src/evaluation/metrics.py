@@ -1,7 +1,10 @@
 import torch
 
-def top_k_accuracy(true_labels, preds, k=1):
+def top_k_accuracy(true_labels, preds, k=1, super=False):
     _, top_k_preds = preds.topk(k, dim=1, largest=True, sorted=True)
+    if super:
+        true_labels //= 5
+        top_k_preds //= 5
     correct = top_k_preds.eq(true_labels.view(-1, 1).expand_as(top_k_preds))
     accuracy = correct.float().sum(1).mean()
     return accuracy
@@ -24,3 +27,8 @@ if __name__ == "__main__":
     # Calculate Top-5 accuracy
     top_5_accuracy = top_k_accuracy(true_labels, preds, k=5)  # 이 예제에서는 k=5는 의미가 없으나, 큰 데이터셋에 적용할 때 사용
     print(f'Top-5 Accuracy: {top_5_accuracy.item() * 100:.2f}%')
+
+    # Calculate Top-1 accuracy for super class
+    top_1_super_accuracy = top_k_accuracy(true_labels, preds, k=1, super=True)
+    print(f'Top-1 Super Accuracy: {top_1_super_accuracy.item() * 100:.2f}%')
+    
