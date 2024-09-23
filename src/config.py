@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms as transforms
 
 CONFIG = {
     'learning_rate': 0.001,
@@ -10,3 +11,15 @@ CONFIG = {
     'train_ratio': 0.8,
     'data_root': './data'
 }
+
+TRAIN_TRANSFORM = \
+    transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+TEST_TRANSFORM = \
+    transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
