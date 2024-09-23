@@ -10,6 +10,9 @@ import torch
 import torch.nn as nn
 from src.data.dataset import load_data
 # from src.models.resnet import ResNet56
+# from src.models.ResNet import ResNet
+# from src.models.ResNet import ResidualBlock
+
 from src.utils.train_utils import train_one_epoch
 from src.utils.eval_utils import evaluate_one_epoch
 from src.config import CONFIG
@@ -79,8 +82,10 @@ def objective(config, transform, model):
 
 if __name__ == "__main__":
     # model = ResNet56().to(CONFIG['device'])
-    # best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc], test_epoch_metrics = objective(CONFIG, (TRAIN_TRANSFORM, TEST_TRANSFORM), model)
+    # model = ResNet(ResidualBlock, [2, 2, 2, 2], num_classes=100).to(device)
 
+    # best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc], test_epoch_metrics = objective(CONFIG, (TRAIN_TRANSFORM, TEST_TRANSFORM), model)
+    
     # print(f'Best Validation Loss: {best_valid_loss:.4f}')
     # print(f'Best Top-1 Accuracy: {best_top1_acc * 100:.2f}%')
     # print(f'Best Top-5 Accuracy: {best_top5_acc * 100:.2f}%')
