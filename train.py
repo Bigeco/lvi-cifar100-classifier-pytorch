@@ -6,7 +6,7 @@ from src.utils.train_utils import train_one_epoch
 from src.utils.eval_utils import evaluate_one_epoch
 from src.config import CONFIG
 
-def objective(config, model):
+def objective(config, transform, model):
     """
     Main training function.
     
@@ -18,8 +18,9 @@ def objective(config, model):
         tuple: (best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc])
     """
     # Load data
-    train_loader, valid_loader = load_data(
+    train_loader, valid_loader, test_loader = load_data(
         config['batch_size'], 
+        transform,
         config['num_workers'], 
         config['train_ratio'], 
         config['data_root']
@@ -47,25 +48,35 @@ def objective(config, model):
         print(f"Valid Accuracy: {valid_metrics['top_1_accuracy']*100:.2f}%, {valid_metrics['top_5_accuracy']*100:.2f}%, {valid_metrics['top_1_super_accuracy']*100:.2f}%")
 
         # Save Best Model, Loss and Accuracy
-        if (valid_loss < best_valid_loss and 
-            valid_metrics['top_1_accuracy'] >= best_top1_acc and 
+        if (valid_loss < best_valid_loss and # 이전 epoch 중에서 best 수치인 valid loss 값과 현재 epoch 에서 구한 valid loss 값을 비교한다. 
+            valid_metrics['top_1_accuracy'] >= best_top1_acc and # 이후로도 마찬가지로 이전 epoch 중에서 최고인 값과 현재 epoch 값을 비교한다.
             valid_metrics['top_5_accuracy'] >= best_top5_acc and 
             valid_metrics['top_1_super_accuracy'] >= best_top1_super_acc):
-            best_valid_loss = valid_loss
+            
+            best_valid_loss = valid_loss # 비교했을 때 만약 현재 epoch 결과값이 최고라면 값을 변경해준다. 
             best_top1_acc = valid_metrics['top_1_accuracy']
             best_top5_acc = valid_metrics['top_5_accuracy']
             best_top1_super_acc = valid_metrics['top_1_super_accuracy']
+
+            best_model = model
             torch.save(model.state_dict(), 'best_model.pth')
             print("Best model saved!")
 
-    return model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc]
+    _, test_epoch_metrics = \
+        evaluate_one_epoch(best_model, test_loader, criterion, CONFIG['device'])
+
+    return best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc], test_epoch_metrics
 
 if __name__ == "__main__":
     # model = ResNet56().to(CONFIG['device'])
-    # best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc] = objective(CONFIG, model)
+    # best_model, [best_valid_loss, best_top1_acc, best_top5_acc, best_top1_super_acc], test_epoch_metrics = objective(CONFIG, (TRAIN_TRANSFORM, TEST_TRANSFORM), model)
 
     # print(f'Best Validation Loss: {best_valid_loss:.4f}')
     # print(f'Best Top-1 Accuracy: {best_top1_acc * 100:.2f}%')
     # print(f'Best Top-5 Accuracy: {best_top5_acc * 100:.2f}%')
     # print(f'Best Top-1 Super Accuracy: {best_top1_super_acc * 100:.2f}%')
+
+    # print(f"Test Top-1 Accuracy: {test_epoch_metrics['top_1_accuracy'] * 100:.2f}%")
+    # print(f"Test Top-5 Accuracy: {test_epoch_metrics['top_5_accuracy'] * 100:.2f}%")
+    # print(f"Test Top-1 Super Accuracy: {test_epoch_metrics['top_1_super_accuracy'] * 100:.2f}%")
     pass
