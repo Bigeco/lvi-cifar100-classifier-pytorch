@@ -9,13 +9,11 @@
 import torch
 import torch.nn as nn
 from src.data.dataset import load_data
-# from src.models.resnet import ResNet56
-# from src.models.ResNet import ResNet
-# from src.models.ResNet import ResidualBlock
+from src.models.ResNet import ResNet, ResidualBlock
 
 from src.utils.train_utils import train_one_epoch
 from src.utils.eval_utils import evaluate_one_epoch
-from src.config import CONFIG
+from src.config import *
 
 def objective(config, transform, model):
     """
