@@ -1,3 +1,11 @@
+"""
+이 train.py 는 모델 학습을 전체적으로 진행하는 함수를 모아둔 코드이다.
+주요 기능:
+- [Function] objective: 이 함수는 epoch 수만큼 학습을 진행하는 함수이다.
+
+마지막 수정: 2023-09-23
+"""
+
 import torch
 import torch.nn as nn
 from src.data.dataset import load_data
@@ -30,9 +38,11 @@ def objective(config, transform, model):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
 
-    # Initialize Best Loss and Accuracy
+    # Initialize Best Loss and Accuracy 
+    # 다음 변수들을 정의한 이유는 여러 epoch 를 진행하면서 무조건 모델을 업데이트하는게 아니라 좋은 정확도가 나온 것에 대해 모델을 판별하는 조건에 필요한 변수이다.
+    best_model = None
     best_valid_loss = float('inf')
-    best_top1_acc = 0
+    best_top1_acc = 0 
     best_top5_acc = 0
     best_top1_super_acc = 0
     
