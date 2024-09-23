@@ -34,7 +34,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     }
     
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc="Training")): # dataloader 변수에서 배치수만큼 데이터 이미지와 라벨을 불러온다.
-        loss, accuracies = process_batch(model, images, labels, criterion, optimizer, device, mode="train") # process_batch 함수를 이용해서 배치수만큼 학습된 모델 결과를 불러온다.
+        loss, accuracies = process_batch(model, images, labels, criterion, optimizer, device) # process_batch 함수를 이용해서 배치수만큼 학습된 모델 결과를 불러온다.
         
         epoch_loss += loss # 해당 loss 는 배치수에 대한 손실값이므로 epoch_loss 에 더해준다.
         for key in epoch_metrics: # epoch_metrics 정확도 결과값도 마찬가지로 배치수에 대한 값이므로 더해준다.
