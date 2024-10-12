@@ -52,6 +52,8 @@ def get_transform(select_transform=None):
             train_transforms.append(transforms.RandomRotation(15))
         if 'RandomVerticalFlip' in select_transform:
             train_transforms.append(transforms.RandomVerticalFlip())
+        if 'AutoAugment' in select_transform:
+            train_transforms.append(transforms.AutoAugment())
 
     train_transforms.extend([
         transforms.ToTensor(),
