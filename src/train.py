@@ -302,6 +302,12 @@ def add_model_specific_args(parser, model_name):
         group.add_argument("--embed_dim", type=int, default=96)
         group.add_argument("--depths", nargs='+', type=int, default=[2, 2, 6, 2])
         group.add_argument("--num_heads", nargs='+', type=int, default=[3, 6, 12, 24])
+    elif model_name == "efficientNet":
+        group = parser.add_argument_group('EfficientNet')
+        group.add_argument("--width", type=float, default=1.0)
+        group.add_argument("--depth", type=float, default=1.0)
+        group.add_argument("--bn_momentum", type=float, default=0.90)
+        group.add_argument("--ratio", type=float, default=0.2)
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
