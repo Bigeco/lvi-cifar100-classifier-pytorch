@@ -1,20 +1,27 @@
 import os
+import gc
 import utils
 import argparse
 from tqdm import tqdm
 import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
+from optimizers import *
 import torch.optim.lr_scheduler as lr_scheduler
+
+from losses import *
 
 from models.ResNet import *
 from models.ResNext import *
 from models.EfficientNet import *
+from models.DenseNet import *
 from models.ViT import *
 from models.WideResNet import *
 from models.SparseSwin import *
 from models.ShakePyramidNet import *
 from datasets import get_dataloaders
+from evaluate import evaluate, print_predicted_results
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -47,7 +54,9 @@ def main(args):
         "swin3": swin3,
         "swin4": swin4,
         "swin5": swin5,
-        "swin6": swin6
+        "swin6": swin6,
+        "efficientnet": efficientnet,
+        "densenet201": densenet201
     }
 
     # 모델 선택 및 초기화
@@ -61,12 +70,13 @@ def main(args):
     # loss function 정의
     # TODO 2: criterion_dict 작성
     criterion_dict = {
-
+        "CrossEntropyLoss": nn.CrossEntropyLoss(),
+        # "FocalLoss": ,
+        "LabelSmoothingLoss": LabelSmoothingLoss(args.label_smoothing)
     }
     criterion = criterion_dict[args.criterion_name]
 
     # optimizer 정의
-    # TODO 3: SAM optimizer 추가
     optimizer_dict = {
         "SGD": optim.SGD(model.parameters(),
                          lr=args.lr,
@@ -82,7 +92,13 @@ def main(args):
                              lr=args.lr,
                              betas=args.betas,
                              eps=args.eps,
-                             weight_decay=args.weight_decay)
+                             weight_decay=args.weight_decay),
+        "SAM": SAMSGD(model.parameters(),
+                      rho=args.rho,
+                      lr=args.lr,
+                      nesterov=args.nesterov,
+                      momentum=args.momentum,
+                      weight_decay=args.weight_decay)
     }
     optimizer = optimizer_dict[args.optimizer_name]
 
@@ -167,7 +183,6 @@ def main(args):
             T_mult=2
         )
     }
-
     scheduler = scheduler_dict[args.scheduler_name](optimizer)
 
     # Checkpoint에서 모델 및 옵티마이저 상태 불러오기
@@ -184,61 +199,100 @@ def main(args):
             print(f"No checkpoint found at {checkpoint_path}, starting from scratch.")
 
     headers = ["Epoch", "LearningRate", "TrainLoss", "TestLoss", "TrainAcc.", "TestAcc."]
-    logger = utils.Logger(args.checkpoint, headers)
-    best_top1_acc = 0
+    logger = utils.Logger(args.checkpoint, headers, resume=args.resume_epoch > 0)
+    best_top1_acc, best_epoch = 0, 0
 
-    for e in range(start_epoch, args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         train_loss, train_acc, train_n = 0, 0, 0
         bar = tqdm(total=len(train_loader), leave=False)
-        for x, t in train_loader:
-            x, t = x.cuda(), t.cuda()
-            y = model(x)
-            loss = criterion(y, t)
-            optimizer.zero_grad()
-            loss.backward()
+        for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device).long()
 
-            if args.grad_clip:
-                nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
+            if args.optimizer_name != "SAM":
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                optimizer.zero_grad()
+                loss.backward()
 
-            optimizer.step()
+                if args.grad_clip:
+                    nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
 
-            train_acc += utils.accuracy(y, t).item()
-            train_loss += loss.item() * t.size(0)
-            train_n += t.size(0)
-            bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
-                train_loss / train_n, train_acc / train_n * 100), refresh=True)
-            bar.update()
+                optimizer.step()
+
+                train_acc += utils.accuracy(outputs, labels).item()
+                train_loss += loss.item() * labels.size(0)
+                train_n += labels.size(0)
+                bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                    train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                bar.update()
+            else:
+                # Closure function for SAM optimizer
+                def closure():
+                    optimizer.zero_grad()
+                    outputs = model(images)
+                    loss = criterion(outputs, labels)  # Assuming mixup is used
+                    loss.backward()
+                    if args.grad_clip:
+                        nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
+                    return loss
+
+                # Perform SAM step (Sharpness-Aware Minimization)
+                loss = optimizer.step(closure)
+                with torch.no_grad():
+                    outputs = model(images)
+                    train_acc += utils.accuracy(outputs, labels).item()
+                train_loss += loss.item() * labels.size(0)
+                train_n += labels.size(0)
+                bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                    train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                bar.update()
+
         bar.close()
 
         model.eval()
         test_loss, test_acc, test_n = 0, 0, 0
-        for x, t in tqdm(test_loader, total=len(test_loader), leave=False):
+        for images, labels in tqdm(test_loader, total=len(test_loader), leave=False):
             with torch.no_grad():
-                x, t = x.cuda(), t.cuda()
-                y = model(x)
-                loss = criterion(y, t)
-                test_loss += loss.item() * t.size(0)
-                test_acc += utils.accuracy(y, t).item()
-                test_n += t.size(0)
+                images, labels = images.to(device), labels.to(device).long()
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                test_loss += loss.item() * labels.size(0)
+                test_acc += utils.accuracy(outputs, labels).item()
+                test_n += labels.size(0)
 
         scheduler.step(test_loss / test_n)
         test_top1_acc = test_acc / test_n
 
-        if (e + 1) % args.snapshot_interval == 0:
+        if (epoch + 1) % args.snapshot_interval == 0:
             torch.save({
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict()
-            }, os.path.join(args.checkpoint, "{}.tar".format(e + 1)))
+            }, os.path.join(args.checkpoint, "{}.tar".format(epoch + 1)))
 
         lr = optimizer.param_groups[0]["lr"]
-        logger.write(e+1, lr, train_loss / train_n, test_loss / test_n,
+        logger.write(epoch+1, lr, train_loss / train_n, test_loss / test_n,
                      train_acc / train_n * 100, test_top1_acc * 100)
 
         if test_top1_acc > best_top1_acc:
             best_top1_acc = test_top1_acc
-            print(f"Best model: Epoch {e}/{args.epochs} - Accuracy: {best_top1_acc:.2f}%")
-            torch.save(model.state_dict(), f"best_{args.model}_epoch_{e}.pth")
+            best_epoch = epoch
+            print(f"Best model: Epoch {epoch}/{args.epochs} - Accuracy: {best_top1_acc:.2f}%")
+            torch.save(model.state_dict(), f"best_{args.model}_epoch_{epoch}.pth")
+
+    # 메모리 정리
+    del checkpoint
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    best_model = model_dict[args.model]().to(device)
+    best_model.load_state_dict(torch.load(f"best_{args.model}_epoch_{best_epoch}.pth"))
+    print_predicted_results(best_model, test_loader, criterion, device)
+
+    # 메모리 정리
+    del checkpoint
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
 def add_model_specific_args(parser, model_name):
@@ -256,6 +310,12 @@ def add_model_specific_args(parser, model_name):
         group.add_argument("--embed_dim", type=int, default=96)
         group.add_argument("--depths", nargs='+', type=int, default=[2, 2, 6, 2])
         group.add_argument("--num_heads", nargs='+', type=int, default=[3, 6, 12, 24])
+    elif model_name == "efficientNet":
+        group = parser.add_argument_group('EfficientNet')
+        group.add_argument("--width", type=float, default=1.0)
+        group.add_argument("--depth", type=float, default=1.0)
+        group.add_argument("--bn_momentum", type=float, default=0.90)
+        group.add_argument("--ratio", type=float, default=0.2)
     else:
         raise ValueError(f"Unknown model: {model_name}")
 

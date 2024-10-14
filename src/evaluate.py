@@ -80,7 +80,19 @@ def evaluate(model, loader, criterion, device):
     return epoch_loss, top1_acc, top5_acc, superclass_acc
 # END
 
+def print_predicted_results(model, loader, criterion, device):
+    test_loss, test_top1_acc, test_top5_acc, test_superclass_acc = \
+        evaluate(model, loader, criterion, device)
+
+    print(f"Test Loss: {test_loss:.2f}%")
+    print(f"Test Top-1 Accuracy: {test_top1_acc * 100:.2f}%")
+    print(f"Test Top-5 Accuracy: {test_top5_acc * 100:.2f}%")
+    print(f"Test Top-1 Super Accuracy: {test_superclass_acc * 100:.2f}%")
+
+
 # TODO 1: 이미지 그리는 함수 불러오는 옵션 추가
 
 # TODO 2: 다음 아래 명령어가 가능하도록 할 것
 # python evaluate.py --model-path path/to/saved/model.pth
+if __name__ == "__main__":
+    pass
