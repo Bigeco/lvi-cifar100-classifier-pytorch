@@ -1,7 +1,9 @@
+import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader, random_split
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class CifarDataset(Dataset):
@@ -60,6 +62,10 @@ def get_transform(select_transform=None):
         transforms.Normalize(mean, std)
     ])
 
+    if select_transform:
+        if 'Cutout' in select_transform:
+            train_transforms.append(Cutout(n_holes=1, length=16))
+
     train_transform = transforms.Compose(train_transforms)
 
     test_transform = \
@@ -83,24 +89,69 @@ def get_datasets(root, select_transform, train_ratio, split=True):
         return dataset, test_dataset
 
 
-def get_dataloaders(root, select_transform, train_ratio, batch_size, num_workers, split=True):
+def get_dataloaders(root, select_transform, train_ratio, batch_size, num_workers, prefetch_factor, split=True):
     trainset, validset, testset = get_datasets(root, select_transform, train_ratio, split)
     train_loader = DataLoader(trainset,
                               batch_size=batch_size,
                               shuffle=True,
                               num_workers=num_workers,
-                              pin_memory=True)
+                              pin_memory=True,
+                              prefetch_factor=prefetch_factor)
     test_loader = DataLoader(testset,
                              batch_size=batch_size * 2,
                              shuffle=False,
                              num_workers=num_workers,
-                             pin_memory=True)
+                             pin_memory=True,
+                             prefetch_factor=prefetch_factor)
     if split:
         valid_loader = DataLoader(validset,
                                   batch_size=batch_size,
                                   shuffle=True,
                                   num_workers=num_workers,
-                                  pin_memory=True)
+                                  pin_memory=True,
+                                  prefetch_factor=prefetch_factor)
         return train_loader, valid_loader, test_loader
     else:
         return train_loader, None, test_loader
+
+
+class Cutout:
+    def __init__(self, n_holes, length):
+        self.n_holes = n_holes
+        self.length = length
+
+    def __call__(self, img):
+        h = img.size(1)
+        w = img.size(2)
+
+        mask = np.ones((h, w), np.float32)
+
+        for n in range(self.n_holes):
+            y = np.random.randint(h)
+            x = np.random.randint(w)
+
+            y1 = np.clip(y - self.length // 2, 0, h)
+            y2 = np.clip(y + self.length // 2, 0, h)
+            x1 = np.clip(x - self.length // 2, 0, w)
+            x2 = np.clip(x + self.length // 2, 0, w)
+
+            mask[y1: y2, x1: x2] = 0.
+
+        mask = torch.from_numpy(mask)
+        mask = mask.expand_as(img)
+        img = img * mask
+
+        return img
+
+def mixup_data(x, y, alpha=1.0):
+    """Returns mixed inputs, pairs of targets, and lambda"""
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size(0)
+    index = torch.randperm(batch_size)
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam

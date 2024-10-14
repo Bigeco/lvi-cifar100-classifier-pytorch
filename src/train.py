@@ -3,13 +3,14 @@ import gc
 import utils
 import argparse
 from tqdm import tqdm
+import random
 
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
-import torch.optim.lr_scheduler as lr_scheduler
 
 from losses import *
 from optimizers import *
+from schedulers import *
 
 from models.ResNet import *
 from models.ResNext import *
@@ -19,14 +20,24 @@ from models.ViT import *
 from models.WideResNet import *
 from models.SparseSwin import *
 from models.ShakePyramidNet import *
-from datasets import get_dataloaders
-from evaluate import evaluate, print_predicted_results
+from datasets import *
+from evaluate import print_predicted_results
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
 
 def main(args):
+    seed_everything(args.seed)  # Seed 고정
+
     # loader 정의
     train_loader, valid_loader, test_loader = get_dataloaders(
                                                 args.root,
@@ -38,7 +49,6 @@ def main(args):
     if not valid_loader:
         test_loader = valid_loader
 
-    # TODO 1: 모델명, 함수명 추가
     # model 정의
     model_dict = {
         "resnet9": resnet9,
@@ -47,40 +57,50 @@ def main(args):
         "resnet50": resnet50,
         "resnet101": resnet101,
         "resnet152": resnet152,
+        "resnext50": resnext50,
+        "resnext101": resnext101,
+        "resnext152": resnext152,
         "wide_resnet28_10": wide_resnet28_10,
-        "shake_pyramidnet_110": shake_pyramidnet_110,
+        "shake_pyramidnet_110": shake_pyramidnet_110, # Best Top-1 accuracy
         "swin1": swin1,
         "swin2": swin2,
         "swin3": swin3,
         "swin4": swin4,
         "swin5": swin5,
         "swin6": swin6,
-        "efficientnet": efficientnet,
-        "densenet201": densenet201
+        "efficientnet_b0": efficientnet_b0,
+        "efficientnet_b1": efficientnet_b1,
+        "efficientnet_b2": efficientnet_b2,
+        "efficientnet_b3": efficientnet_b3,
+        "efficientnet_b4": efficientnet_b4,
+        "efficientnet_b5": efficientnet_b5,
+        "efficientnet_b6": efficientnet_b6,
+        "efficientnet_b7": efficientnet_b7,
+        "densenet201": densenet201,
+        "vit": vit
     }
 
     # 모델 선택 및 초기화
-    if args.model in model_dict:
-        model = model_dict[args.model]().to(device)
+    if args.model_name in model_dict:
+        model = model_dict[args.model_name]().to(device)
     else:
-        raise ValueError(f"Unsupported model: {args.model}")
+        raise ValueError(f"Unsupported model: {args.model_name}")
 
     cudnn.benckmark = True
 
     # loss function 정의
-    # TODO 2: criterion_dict 작성
     criterion_dict = {
-        "CrossEntropyLoss": nn.CrossEntropyLoss(),
-        # "FocalLoss": ,
+        "CrossEntropyLoss": nn.CrossEntropyLoss(), # Best Top-1 accuracy
+        "FocalLoss": FocalLoss(gamma=args.gamma),
         "LabelSmoothingLoss": LabelSmoothingLoss(args.label_smoothing)
     }
     criterion = criterion_dict[args.criterion_name]
 
     # optimizer 정의
     optimizer_dict = {
-        "SGD": optim.SGD(model.parameters(),
+        "SGD": optim.SGD(model.parameters(), # Best Top-1 accuracy
                          lr=args.lr,
-                         momentum=0.9,
+                         momentum=args.momentum,
                          weight_decay=args.weight_decay,
                          nesterov=args.nesterov),
         "Adam": optim.Adam(model.parameters(),
@@ -103,7 +123,6 @@ def main(args):
     optimizer = optimizer_dict[args.optimizer_name]
 
     # scheduler 정의
-    # TODO 5: 파라미터 모두 args.? 로 변경
     scheduler_dict = {
         "LambdaLR": lambda optimizer: lr_scheduler.LambdaLR(
             optimizer,
@@ -120,7 +139,7 @@ def main(args):
         ),
         "MultiStepLR": lambda optimizer: lr_scheduler.MultiStepLR(
             optimizer,
-            milestones=[30, 60, 90],
+            milestones=[args.epochs // 2, args.epochs * 3 // 4],
             gamma=0.1
         ),
         "ConstantLR": lambda optimizer: lr_scheduler.ConstantLR(
@@ -181,6 +200,14 @@ def main(args):
             optimizer,
             T_0=10,
             T_mult=2
+        ),
+        # Best Top-1 accuracy
+        "CombinedScheduler": lambda optimizer: CombinedScheduler(
+            optimizer,
+            milestones=[args.epochs // 2, args.epochs * 3 // 4],
+            mode='min',
+            factor=0.1,
+            patience=10
         )
     }
     scheduler = scheduler_dict[args.scheduler_name](optimizer)
@@ -207,46 +234,106 @@ def main(args):
         train_loss, train_acc, train_n = 0, 0, 0
         bar = tqdm(total=len(train_loader), leave=False)
         for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device).long()
-
             if args.optimizer_name != "SAM":
-                outputs = model(images)
-                loss = criterion(outputs, labels)
-                optimizer.zero_grad()
-                loss.backward()
-
-                if args.grad_clip:
-                    nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
-
-                optimizer.step()
-
-                train_acc += utils.accuracy(outputs, labels).item()
-                train_loss += loss.item() * labels.size(0)
-                train_n += labels.size(0)
-                bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
-                    train_loss / train_n, train_acc / train_n * 100), refresh=True)
-                bar.update()
-            else:
-                # Closure function for SAM optimizer
-                def closure():
+                # no SAM, no Mixup
+                if not args.mixup:
+                    images, labels = images.to(device), labels.to(device).long()
                     optimizer.zero_grad()
                     outputs = model(images)
-                    loss = criterion(outputs, labels)  # Assuming mixup is used
+                    loss = criterion(outputs, labels)
                     loss.backward()
+
                     if args.grad_clip:
                         nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
-                    return loss
 
-                # Perform SAM step (Sharpness-Aware Minimization)
-                loss = optimizer.step(closure)
-                with torch.no_grad():
-                    outputs = model(images)
+                    optimizer.step()
+
                     train_acc += utils.accuracy(outputs, labels).item()
-                train_loss += loss.item() * labels.size(0)
-                train_n += labels.size(0)
-                bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
-                    train_loss / train_n, train_acc / train_n * 100), refresh=True)
-                bar.update()
+                    train_loss += loss.item() * labels.size(0)
+                    train_n += labels.size(0)
+                    bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                        train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                    bar.update()
+                # no SAM, yes Mixup
+                else:
+                    images, labels = images, labels.long()
+                    mixed_images, targets_a, targets_b, lam = mixup_data(images, labels, 1.0)
+                    mixed_images = mixed_images.to(device)
+                    targets_a = targets_a.to(device)
+                    targets_b = targets_b.to(device)
+
+                    optimizer.zero_grad()
+                    outputs = model(mixed_images)
+                    loss = lam * criterion(outputs, targets_a) + (1 - lam) * criterion(outputs, targets_b)
+                    loss.backward()
+
+                    if args.grad_clip:
+                        nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
+
+                    optimizer.step()
+
+                    train_acc_a = utils.accuracy(outputs, targets_a)
+                    train_acc_b = utils.accuracy(outputs, targets_b)
+                    train_acc += lam * train_acc_a + (1 - lam) * train_acc_b
+                    train_loss += loss.item() * labels.size(0)
+                    train_n += labels.size(0)
+                    bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                        train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                    bar.update()
+            else:
+                # yes SAM, no mixup
+                if not args.mixup:
+                    images, labels = images.to(device), labels.to(device).long()
+
+                    # Closure function for SAM optimizer
+                    def closure():
+                        optimizer.zero_grad()
+                        outputs = model(images)
+                        loss = criterion(outputs, labels)  # Assuming mixup is used
+                        loss.backward()
+                        if args.grad_clip:
+                            nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
+                        return loss
+
+                    # Perform SAM step (Sharpness-Aware Minimization)
+                    loss = optimizer.step(closure)
+                    with torch.no_grad():
+                        outputs = model(images)
+                        train_acc += utils.accuracy(outputs, labels).item()
+                    train_loss += loss.item() * labels.size(0)
+                    train_n += labels.size(0)
+                    bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                        train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                    bar.update()
+                # yes SAM, yes mixup
+                else:
+                    images, labels = images, labels.long()
+                    mixed_images, targets_a, targets_b, lam = mixup_data(images, labels, 1.0)
+                    mixed_images = mixed_images.to(device)
+                    targets_a = targets_a.to(device)
+                    targets_b = targets_b.to(device)
+
+                    # Closure function for SAM optimizer
+                    def closure():
+                        optimizer.zero_grad()
+                        outputs = model(mixed_images)
+                        loss = lam * criterion(outputs, targets_a) + (1 - lam) * criterion(outputs, targets_b)
+                        loss.backward()
+                        if args.grad_clip:
+                            nn.utils.clip_grad_value_(model.parameters(), args.grad_clip)
+                        return loss
+
+                    loss = optimizer.step(closure)
+                    with torch.no_grad():
+                        outputs = model(images)
+                        train_acc_a = utils.accuracy(outputs, targets_a)
+                        train_acc_b = utils.accuracy(outputs, targets_b)
+                        train_acc += lam * train_acc_a + (1 - lam) * train_acc_b
+                    train_loss += loss.item() * labels.size(0)
+                    train_n += labels.size(0)
+                    bar.set_description("Loss: {:.4f}, Accuracy: {:.2f}".format(
+                        train_loss / train_n, train_acc / train_n * 100), refresh=True)
+                    bar.update()
 
         bar.close()
 
@@ -278,15 +365,15 @@ def main(args):
             best_top1_acc = test_top1_acc
             best_epoch = epoch
             print(f"Best model: Epoch {epoch}/{args.epochs} - Accuracy: {best_top1_acc:.2f}%")
-            torch.save(model.state_dict(), f"best_{args.model}_epoch_{epoch}.pth")
+            torch.save(model.state_dict(), f"best_{args.model_name}_epoch_{epoch}.pth")
 
     # 메모리 정리
     del checkpoint
     gc.collect()
     torch.cuda.empty_cache()
 
-    best_model = model_dict[args.model]().to(device)
-    best_model.load_state_dict(torch.load(f"best_{args.model}_epoch_{best_epoch}.pth"))
+    best_model = model_dict[args.model_name]().to(device)
+    best_model.load_state_dict(torch.load(f"best_{args.model_name}_epoch_{best_epoch}.pth"))
     print_predicted_results(best_model, test_loader, criterion, device)
 
     # 메모리 정리
@@ -295,49 +382,47 @@ def main(args):
     torch.cuda.empty_cache()
 
 
-def add_model_specific_args(parser, model_name):
-    # TODO 4: 다음은 예시 코드임. 각 모델에 대한 argument 에 대해서 추가
-    if model_name == "resnet":
-        group = parser.add_argument_group('ResNet')
-        group.add_argument("--num_layers", type=int, default=50)
-        group.add_argument("--bottleneck", action="store_true")
-    elif model_name == "wide_resnet":
-        group = parser.add_argument_group('Wide ResNet')
-        group.add_argument("--depth", type=int, default=28)
-        group.add_argument("--widen_factor", type=int, default=10)
-    elif model_name == "swin":
-        group = parser.add_argument_group('Swin Transformer')
-        group.add_argument("--embed_dim", type=int, default=96)
-        group.add_argument("--depths", nargs='+', type=int, default=[2, 2, 6, 2])
-        group.add_argument("--num_heads", nargs='+', type=int, default=[3, 6, 12, 24])
-    elif model_name == "efficientNet":
-        group = parser.add_argument_group('EfficientNet')
-        group.add_argument("--width", type=float, default=1.0)
-        group.add_argument("--depth", type=float, default=1.0)
-        group.add_argument("--bn_momentum", type=float, default=0.90)
-        group.add_argument("--ratio", type=float, default=0.2)
-    else:
-        raise ValueError(f"Unknown model: {model_name}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # TODO 5: argument 추가
-    parser.add_argument("--label", type=int, default=10)
+    parser.add_argument("--label", type=int, default=100)
     parser.add_argument("--checkpoint", type=str, default="./checkpoint")
     parser.add_argument("--snapshot_interval", type=int, default=10)
     parser.add_argument("--resume_epoch", type=int, default=0, help="Epoch to resume from. 0 starts from scratch.")
+
     # For Training
-    parser.add_argument("--lr", type=float, default=0.1)
-    parser.add_argument("--weight_decay", type=float, default=0.0001)
-    parser.add_argument("--nesterov", type=bool, default=True)
-    parser.add_argument("--epochs", type=int, default=1800)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch_size", type=int, default=128)
-    temp_args, _ = parser.parse_known_args()
+    parser.add_argument("--num_workers", type=int, default=32)
+    parser.add_argument("--root", type=str, default="./data")
+    parser.add_argument("--select_transform", type=tuple, default=('RandomCrop', 'RandomHorizontalFlip', 'Cutout'))
+    parser.add_argument("--train_ratio", type=float, default=0.9)
+    parser.add_argument("--split", type=bool, default=False)
+    parser.add_argument("--grad_clip", type=float, default=0)
+    parser.add_argument("--mixup", type=bool, default=False)
+
     # For Networks
-    add_model_specific_args(parser, temp_args.model)
+    parser.add_argument("--model_name", type=str, default="shake_pyramidnet_110")
+
+    # For Loss Function
+    parser.add_argument("--criterion_name", type=str, default="CrossEntropyLoss")
+    parser.add_argument("--gamma", type=float, default=2.0) #  Focal Loss
+    parser.add_argument("--label_smoothing", type=float, default=0.1) # Label Smoothing Loss
+
+    # For Optimizer
+    parser.add_argument("--optimizer_name", type=str, default="SGD")
+    parser.add_argument("--lr", type=float, default=0.1) # SGD, Adam, AdamW, SAM
+    parser.add_argument("--momentum", type=float, default=0.9) # SGD, SAM
+    parser.add_argument("--weight_decay", type=float, default=0.0001) # SGD, Adam, AdamW, SAM
+    parser.add_argument("--nesterov", type=bool, default=True) # SGD, SAM
+    parser.add_argument("--betas", type=tuple, default=(0.9, 0.999)) # Adam, AdamW
+    parser.add_argument("--eps", type=float, default=1e-08) # Adam, AdamW
+    parser.add_argument("--rho", type=float, default=0.05) # SAM
+    parser.add_argument()
+
+    # For Scheduler
+    parser.add_argument("--scheduler_name", type=str, default="CombinedScheduler")
+
 
     args = parser.parse_args()
     main(args)
-
-

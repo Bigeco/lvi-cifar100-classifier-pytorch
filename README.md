@@ -46,7 +46,7 @@ models using various state-of-the-art architectures.
 1. Clone the repository:
    ```sh
    git clone https://github.com/bigeco/lvi-cifar100-classifier-pytorch.git
-   cd lvi-cifar100-classifier-pytorc
+   cd lvi-cifar100-classifier-pytorch
    ```
 
 2. Install the required packages:
@@ -62,7 +62,7 @@ To train the model:
 python src/train.py --epochs 200 --batch-size 128
 ```
 
-To print test accuracy of the model:
+To predict and print test accuracy of the model:
 
 ```sh
 python src/evaluate.py --model-path path/to/saved/model.pth
@@ -84,15 +84,20 @@ The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` l
 [You can include a simple ASCII diagram or code snippet here]
 ```
 
-## Training
+## Training for Best Top-1 accuracy
 
-- **Optimizer**: Adam
-- **Learning Rate**: 0.001 with cosine annealing
+We implemented PyramidNet with ShakeDrop regularization 
+and achieved the highest top-1 accuracy of 83.93% among all models 
+on the CIFAR-100 dataset.
+
+- **Optimizer**: SGD
+- **Learning Rate**: 0.001 with MultiStep and ReduceLROnPlateau
 - **Batch Size**: 128
-- **Epochs**: 200
-- **Data Augmentation**: Random crop, horizontal flip, normalization
+- **Epochs**: 150
+- **Data Augmentation**: Random crop, Random horizontal flip, Cutout
+- **loss function**: CrossEntropy
 
-## Results
+## Results 
 
 | Model | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
 |-------|----------------|----------------|----------------------|
@@ -103,7 +108,6 @@ The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` l
 | PyramidNet | XX% | XX% | XX% |
 | EfficientNet | XX% | XX% | XX% |
 
-[You can add more details, graphs, or visualizations here]
 
 ## Visualizations
 
@@ -111,7 +115,7 @@ We have implemented various visualization functions in the `visualizations.py` f
 
 - Loss graphs
 - Accuracy graphs
-- Loss landscapes
+- Graph the correct number of classes
 
 To generate visualizations:
 
@@ -119,7 +123,8 @@ To generate visualizations:
 python src/visualizations.py --model [model_name] --plot-type [plot_type]
 ```
 
-Replace `[model_name]` with one of the implemented models and `[plot_type]` with either `loss`, `accuracy`, or `landscape`.
+Replace `[model_name]` with one of the implemented models and `[plot_type]` 
+with either `loss`, `accuracy` or `correct`.
 
 Example:
 ```sh
