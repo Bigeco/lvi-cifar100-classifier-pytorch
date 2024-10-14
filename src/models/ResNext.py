@@ -1,5 +1,3 @@
-import math
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -11,8 +9,7 @@ class ResNextBottleNeckC(nn.Module):
     def __init__(self, in_channels, out_channels, stride):
         super().__init__()
 
-        C = CARDINALITY 
-
+        C = CARDINALITY
         D = int(DEPTH * out_channels / BASEWIDTH)
         self.split_transforms = nn.Sequential(
             nn.Conv2d(in_channels, C * D, kernel_size=1, groups=C, bias=False),
@@ -37,7 +34,7 @@ class ResNextBottleNeckC(nn.Module):
         return F.relu(self.split_transforms(x) + self.shortcut(x))
 
 class ResNext(nn.Module):
-    def __init__(self, block, num_blocks, class_names=100):
+    def __init__(self, block, num_blocks):
         super().__init__()
         self.in_channels = 64
 

@@ -9,7 +9,8 @@ class SameConv(nn.Conv2d):
         super().__init__(inchannels, outchannels, kernelsize, stride,
                          padding=0, dilation=dilation, groups=groups, bias=bias)
 
-    def how_padding(self, n, kernel, stride, dilation):
+    @staticmethod
+    def how_padding(n, kernel, stride, dilation):
         out_size = (n + stride - 1) // stride
         real_kernel = (kernel - 1) * dilation + 1
         padding_needed = max(0, (out_size - 1) * stride + real_kernel - n)
@@ -30,11 +31,12 @@ class Swish(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
+    @staticmethod
+    def forward(x):
         return x * torch.sigmoid(x)
 
 
-class conv_bn_act(nn.Module):
+class ConvBnAct(nn.Module):
     def __init__(self, inchannels, outchannels, kernelsize, stride=1, dilation=1, groups=1, bias=False, bn_momentum=0.99):
         super().__init__()
         self.block = nn.Sequential(
@@ -70,8 +72,8 @@ class MBConv(nn.Module):
                  is_skip=True, dc_ratio=(1-0.8), bn_momentum=0.90):
         super().__init__()
         mid = expan * inchannels
-        self.pointwise1 = conv_bn_act(inchannels, mid, 1) if expan != 1 else nn.Identity()
-        self.depthwise = conv_bn_act(mid, mid, kernelsize, stride=stride, groups=mid)
+        self.pointwise1 = ConvBnAct(inchannels, mid, 1) if expan != 1 else nn.Identity()
+        self.depthwise = ConvBnAct(mid, mid, kernelsize, stride=stride, groups=mid)
         self.se = SE(mid, int(inchannels/se_ratio))
         self.pointwise2 = nn.Sequential(
             SameConv(mid, outchannels, 1),
@@ -100,9 +102,10 @@ class MBblock(nn.Module):
                  is_skip, dc_ratio=(1-0.8), bn_momentum=0.90):
         super().__init__()
 
-        layers = []
-        layers.append(MBConv(inchannels, outchannels, expan, kernelsize, stride,
-                             se_ratio, is_skip, dc_ratio, bn_momentum))
+        layers = [
+            MBConv(inchannels, outchannels, expan, kernelsize,
+                   stride, se_ratio, is_skip, dc_ratio, bn_momentum)
+        ]
         while repeat-1:
             layers.append(MBConv(outchannels, outchannels, expan, kernelsize, 1,
                                  se_ratio, is_skip, dc_ratio, bn_momentum))
@@ -120,9 +123,9 @@ class EfficientNet(nn.Module):
         super().__init__()
 
         def renew_width(x):
-            min = max(min_width, width_divisor)
+            min_ = max(min_width, width_divisor)
             x *= width
-            new_x = max(min, int((x + width_divisor/2) // width_divisor * width_divisor))
+            new_x = max(min_, int((x + width_divisor/2) // width_divisor * width_divisor))
 
             if new_x < 0.9 * x:
                 new_x += width_divisor

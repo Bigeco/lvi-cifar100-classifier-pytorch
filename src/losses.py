@@ -1,4 +1,6 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class LabelSmoothingLoss(nn.Module):
     def __init__(self, smoothing=0.1):

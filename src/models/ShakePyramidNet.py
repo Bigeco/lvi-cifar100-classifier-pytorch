@@ -7,7 +7,7 @@ from torch.autograd import Variable
 
 class ShakeDropFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x, training=True, p_drop=0.5, alpha_range=[-1, 1]):
+    def forward(ctx, x, training=True, p_drop=0.5, alpha_range=(-1, 1)):
         if training:
             gate = torch.cuda.FloatTensor([0]).bernoulli_(1 - p_drop)
             ctx.save_for_backward(gate)
@@ -33,7 +33,7 @@ class ShakeDropFunction(torch.autograd.Function):
 
 
 class ShakeDrop(nn.Module):
-    def __init__(self, p_drop=0.5, alpha_range=[-1, 1]):
+    def __init__(self, p_drop=0.5, alpha_range=(-1, 1)):
         super(ShakeDrop, self).__init__()
         self.p_drop = p_drop
         self.alpha_range = alpha_range
@@ -59,7 +59,8 @@ class ShakeBasicBlock(nn.Module):
 
         return h + h0
 
-    def _make_branch(self, in_ch, out_ch, stride=1):
+    @staticmethod
+    def _make_branch(in_ch, out_ch, stride=1):
         return nn.Sequential(
             nn.BatchNorm2d(in_ch),
             nn.Conv2d(in_ch, out_ch, 3, padding=1, stride=stride, bias=False),

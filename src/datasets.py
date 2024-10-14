@@ -15,7 +15,7 @@ class CifarDataset(Dataset):
         return len(self.data)
 
     def __getclass__(self):
-        return self.classes
+        return self.data.classes
 
     def __getitem__(self, idx):
         image, label = self.data.__getitem__(idx)

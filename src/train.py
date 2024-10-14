@@ -3,13 +3,13 @@ import gc
 import utils
 import argparse
 from tqdm import tqdm
-import torch
+
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
-from optimizers import *
 import torch.optim.lr_scheduler as lr_scheduler
 
 from losses import *
+from optimizers import *
 
 from models.ResNet import *
 from models.ResNext import *

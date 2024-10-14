@@ -40,9 +40,6 @@ class ResNet9(nn.Module):
 
 
 class BasicBlock(nn.Module):
-    """Basic Block for resnet 18 and resnet 34
-
-    """
     expansion = 1
 
     def __init__(self, in_channels, out_channels, stride=1):
@@ -73,9 +70,6 @@ class BasicBlock(nn.Module):
 
 
 class BottleNeck(nn.Module):
-    """Residual block for resnet over 50 layers
-
-    """
     expansion = 4
 
     def __init__(self, in_channels, out_channels, stride=1):
@@ -140,7 +134,6 @@ class ResNet(nn.Module):
         output = self.avg_pool(output)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
-
         return output
 
 
