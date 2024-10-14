@@ -1,4 +1,7 @@
-# TODO 1: 모델 클래스 코드 추가
+import torch
+import torch.nn as nn
+
+
 class DenseLayer(nn.Module):
     def __init__(self, in_channels, growth_rate):
         super(DenseLayer, self).__init__()
@@ -81,7 +84,6 @@ class DenseNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
-      
-# TODO 2: 모델 클래스 객체를 선언하는 함수 추가
+
 def densenet201():
     return DenseNet(num_blocks=[6, 12, 48, 32], growth_rate=32)

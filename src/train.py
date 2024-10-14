@@ -9,15 +9,19 @@ import torch.optim as optim
 from optimizers import *
 import torch.optim.lr_scheduler as lr_scheduler
 
+from losses import *
+
 from models.ResNet import *
 from models.ResNext import *
 from models.EfficientNet import *
+from models.DenseNet import *
 from models.ViT import *
 from models.WideResNet import *
 from models.SparseSwin import *
 from models.ShakePyramidNet import *
 from datasets import get_dataloaders
 from evaluate import evaluate, print_predicted_results
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -50,7 +54,9 @@ def main(args):
         "swin3": swin3,
         "swin4": swin4,
         "swin5": swin5,
-        "swin6": swin6
+        "swin6": swin6,
+        "efficientnet": efficientnet,
+        "densenet201": densenet201
     }
 
     # 모델 선택 및 초기화
@@ -64,7 +70,9 @@ def main(args):
     # loss function 정의
     # TODO 2: criterion_dict 작성
     criterion_dict = {
-
+        "CrossEntropyLoss": nn.CrossEntropyLoss(),
+        # "FocalLoss": ,
+        "LabelSmoothingLoss": LabelSmoothingLoss(args.label_smoothing)
     }
     criterion = criterion_dict[args.criterion_name]
 
