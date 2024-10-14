@@ -1,4 +1,3 @@
-import torch.nn as nn
 import math
 import torch.nn as nn
 import torch
@@ -11,7 +10,7 @@ class conv_bn_act(nn.Module):
         self.block = nn.Sequential(
             SameConv(inchannels, outchannels, kernelsize, stride, dilation, groups, bias=bias),
             nn.BatchNorm2d(outchannels, momentum=1-bn_momentum),
-            swish()
+            Swish()
         )
 
     def forward(self, x):
@@ -23,7 +22,8 @@ class SameConv(nn.Conv2d):
         super().__init__(inchannels, outchannels, kernelsize, stride,
                          padding=0, dilation=dilation, groups=groups, bias=bias)
 
-    def how_padding(self, n, kernel, stride, dilation):
+    @staticmethod
+    def how_padding(n, kernel, stride, dilation):
         out_size = (n + stride - 1) // stride
         real_kernel = (kernel - 1) * dilation + 1
         padding_needed = max(0, (out_size - 1) * stride + real_kernel - n)
@@ -41,11 +41,12 @@ class SameConv(nn.Conv2d):
 
 
 
-class swish(nn.Module):
+class Swish(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
+    @staticmethod
+    def forward(x):
         return x * torch.sigmoid(x)
 
 
@@ -55,7 +56,7 @@ class SE(nn.Module):
         self.AvgPool = nn.AdaptiveAvgPool2d(1)
         self.SEblock = nn.Sequential(
             nn.Linear(inchannels, mid),
-            swish(),
+            Swish(),
             nn.Linear(mid, inchannels)
         )
 
@@ -83,7 +84,7 @@ class drop_connect(nn.Module):
 
 class MBConv(nn.Module):
     def __init__(self, inchannels, outchannels, expan, kernelsize, stride, se_ratio=4,
-                 is_skip=True, dc_ratio=(1-0.8), bn_momentum=0.90):
+                 is_skip=True, bn_momentum=0.90):
         super().__init__()
         mid = expan * inchannels
         self.pointwise1 = conv_bn_act(inchannels, mid, 1) if expan != 1 else nn.Identity()
@@ -112,15 +113,16 @@ class MBConv(nn.Module):
 
 class MBblock(nn.Module):
     def __init__(self, inchannels, outchannels, expan, kernelsize, stride, se_ratio, repeat,
-                 is_skip, dc_ratio=(1-0.8), bn_momentum=0.90):
+                 is_skip, bn_momentum=0.90):
         super().__init__()
 
-        layers = []
-        layers.append(MBConv(inchannels, outchannels, expan, kernelsize, stride,
-                             se_ratio, is_skip, dc_ratio, bn_momentum))
+        layers = [
+            MBConv(inchannels, outchannels, expan, kernelsize, stride,
+                   se_ratio, is_skip, bn_momentum)
+        ]
         while repeat-1:
             layers.append(MBConv(outchannels, outchannels, expan, kernelsize, 1,
-                                 se_ratio, is_skip, dc_ratio, bn_momentum))
+                                 se_ratio, is_skip, bn_momentum))
             repeat = repeat - 1
 
         self.block = nn.Sequential(*layers)
@@ -131,14 +133,12 @@ class MBblock(nn.Module):
 
 class EfficientNet(nn.Module):
     def __init__(self, width_multipler, depth_multipler, do_ratio, min_width=0, width_divisor=8,
-                 se_ratio=4, dc_ratio=(1-0.8), bn_momentum=0.90, num_class=100):
+                 se_ratio=4, bn_momentum=0.90, num_class=100):
         super().__init__()
-        self.resolution = resolution
-
         def renew_width(x):
-            min = max(min_width, width_divisor)
+            min_ = max(min_width, width_divisor)
             x *= width_multipler
-            new_x = max(min, int((x + width_divisor/2) // width_divisor * width_divisor))
+            new_x = max(min_, int((x + width_divisor/2) // width_divisor * width_divisor))
 
             if new_x < 0.9 * x:
                 new_x += width_divisor
@@ -150,23 +150,23 @@ class EfficientNet(nn.Module):
         self.stage1 = nn.Sequential(
             SameConv(3, renew_width(32), 3),
             nn.BatchNorm2d(renew_width(32), momentum=bn_momentum),
-            swish()
+            Swish()
         )
         self.stage2 = nn.Sequential(
                     # inchannels     outchannels  expand k  s(mobilenetv2)  repeat      is_skip
-            MBblock(renew_width(32), renew_width(16), 1, 3, 1, se_ratio, renew_depth(1), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(16), renew_width(24), 6, 3, 2, se_ratio, renew_depth(2), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(24), renew_width(40), 6, 5, 2, se_ratio, renew_depth(2), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(40), renew_width(80), 6, 3, 2, se_ratio, renew_depth(3), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(80), renew_width(112), 6, 5, 1, se_ratio, renew_depth(3), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(112), renew_width(192), 6, 5, 1, se_ratio, renew_depth(4), True, dc_ratio, bn_momentum),
-            MBblock(renew_width(192), renew_width(320), 6, 3, 1, se_ratio, renew_depth(1), True, dc_ratio, bn_momentum)
+            MBblock(renew_width(32), renew_width(16), 1, 3, 1, se_ratio, renew_depth(1), True, bn_momentum),
+            MBblock(renew_width(16), renew_width(24), 6, 3, 2, se_ratio, renew_depth(2), True, bn_momentum),
+            MBblock(renew_width(24), renew_width(40), 6, 5, 2, se_ratio, renew_depth(2), True, bn_momentum),
+            MBblock(renew_width(40), renew_width(80), 6, 3, 2, se_ratio, renew_depth(3), True, bn_momentum),
+            MBblock(renew_width(80), renew_width(112), 6, 5, 1, se_ratio, renew_depth(3), True, bn_momentum),
+            MBblock(renew_width(112), renew_width(192), 6, 5, 1, se_ratio, renew_depth(4), True, bn_momentum),
+            MBblock(renew_width(192), renew_width(320), 6, 3, 1, se_ratio, renew_depth(1), True, bn_momentum)
         )
         #print("initing stage 3")
         self.stage3 = nn.Sequential(
             SameConv(renew_width(320), renew_width(1280), 1, stride=1),
             nn.BatchNorm2d(renew_width(1280), bn_momentum),
-            swish(),
+            Swish(),
             nn.AdaptiveAvgPool2d(1),
             nn.Dropout(do_ratio)
         )
@@ -193,25 +193,25 @@ class EfficientNet(nn.Module):
 
 # TODO: 파라미터 인자값 확인
 def efficientnet_b0(num_classes=100):
-    return EfficientNet(width_multipler=1.0, depth_multipler=1.0, resolution=224, do_ratio=0.2, num_class=num_classes)
+    return EfficientNet(width_multipler=1.0, depth_multipler=1.0, do_ratio=0.2, num_class=num_classes)
 
 def efficientnet_b1(num_classes=100):
-    return EfficientNet(width_multipler=1.0, depth_multipler=1.1, resolution=240, do_ratio=0.2, num_class=num_classes)
+    return EfficientNet(width_multipler=1.0, depth_multipler=1.1, do_ratio=0.2, num_class=num_classes)
 
 def efficientnet_b2(num_classes=100):
-    return EfficientNet(width_multipler=1.1, depth_multipler=1.2, resolution=260, do_ratio=0.3, num_class=num_classes)
+    return EfficientNet(width_multipler=1.1, depth_multipler=1.2, do_ratio=0.3, num_class=num_classes)
 
 def efficientnet_b3(num_classes=100):
-    return EfficientNet(width_multipler=1.2, depth_multipler=1.4, resolution=300, do_ratio=0.3, num_class=num_classes)
+    return EfficientNet(width_multipler=1.2, depth_multipler=1.4, do_ratio=0.3, num_class=num_classes)
 
 def efficientnet_b4(num_classes=100):
-    return EfficientNet(width_multipler=1.4, depth_multipler=1.8, resolution=380, do_ratio=0.4, num_class=num_classes)
+    return EfficientNet(width_multipler=1.4, depth_multipler=1.8, do_ratio=0.4, num_class=num_classes)
 
 def efficientnet_b5(num_classes=100):
-    return EfficientNet(width_multipler=1.6, depth_multipler=2.2, resolution=456, do_ratio=0.4, num_class=num_classes)
+    return EfficientNet(width_multipler=1.6, depth_multipler=2.2, do_ratio=0.4, num_class=num_classes)
 
 def efficientnet_b6(num_classes=100):
-    return EfficientNet(width_multipler=1.8, depth_multipler=2.6, resolution=528, do_ratio=0.5, num_class=num_classes)
+    return EfficientNet(width_multipler=1.8, depth_multipler=2.6, do_ratio=0.5, num_class=num_classes)
 
 def efficientnet_b7(num_classes=100):
-    return EfficientNet(width_multipler=2.0, depth_multipler=3.1, resolution=600, do_ratio=0.5, num_class=num_classes)
+    return EfficientNet(width_multipler=2.0, depth_multipler=3.1, do_ratio=0.5, num_class=num_classes)
