@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+CARDINALITY = 32
+DEPTH = 4
+BASEWIDTH = 64
+
 class ResNextBottleNeckC(nn.Module):
     def __init__(self, in_channels, out_channels, stride):
         super().__init__()
