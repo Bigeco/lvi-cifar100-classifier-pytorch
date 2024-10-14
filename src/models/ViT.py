@@ -1,3 +1,7 @@
+import torch
+import torch.nn as nn
+
+
 class PatchEmbed(nn.Module):
     def __init__(self, img_size, patch_size, in_chans=3, embed_dim=768):
         super().__init__()
@@ -85,7 +89,7 @@ class VisionTransformer(nn.Module):
             Block(
                 dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                 drop=drop_rate, attn_drop=attn_drop_rate)
-            for i in range(depth)])
+            for _ in range(depth)])
 
         self.norm = nn.LayerNorm(embed_dim)
         self.head = nn.Linear(embed_dim, num_classes)
@@ -103,17 +107,17 @@ class VisionTransformer(nn.Module):
         x = self.head(x[:, 0])
         return x      
 
-def ViT():
-  return VisionTransformer(
-    img_size=32,
-    patch_size=4,
-    in_chans=3,
-    num_classes=100,
-    embed_dim=192,
-    depth=12,
-    num_heads=3,
-    mlp_ratio=4.,
-    qkv_bias=True,
-    drop_rate=0.1,
-    attn_drop_rate=0.1
-)
+def vit():
+    return VisionTransformer(
+        img_size=32,
+        patch_size=4,
+        in_chans=3,
+        num_classes=100,
+        embed_dim=192,
+        depth=12,
+        num_heads=3,
+        mlp_ratio=4.,
+        qkv_bias=True,
+        drop_rate=0.1,
+        attn_drop_rate=0.1
+    )

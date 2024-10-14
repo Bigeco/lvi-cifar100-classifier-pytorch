@@ -9,7 +9,8 @@ class SameConv(nn.Conv2d):
         super().__init__(inchannels, outchannels, kernelsize, stride,
                          padding=0, dilation=dilation, groups=groups, bias=bias)
 
-    def how_padding(self, n, kernel, stride, dilation):
+    @staticmethod
+    def how_padding(n, kernel, stride, dilation):
         out_size = (n + stride - 1) // stride
         real_kernel = (kernel - 1) * dilation + 1
         padding_needed = max(0, (out_size - 1) * stride + real_kernel - n)
@@ -30,11 +31,12 @@ class Swish(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
+    @staticmethod
+    def forward(x):
         return x * torch.sigmoid(x)
 
 
-class conv_bn_act(nn.Module):
+class ConvBnAct(nn.Module):
     def __init__(self, inchannels, outchannels, kernelsize, stride=1, dilation=1, groups=1, bias=False, bn_momentum=0.99):
         super().__init__()
         self.block = nn.Sequential(
@@ -70,8 +72,8 @@ class MBConv(nn.Module):
                  is_skip=True, dc_ratio=(1-0.8), bn_momentum=0.90):
         super().__init__()
         mid = expan * inchannels
-        self.pointwise1 = conv_bn_act(inchannels, mid, 1) if expan != 1 else nn.Identity()
-        self.depthwise = conv_bn_act(mid, mid, kernelsize, stride=stride, groups=mid)
+        self.pointwise1 = ConvBnAct(inchannels, mid, 1) if expan != 1 else nn.Identity()
+        self.depthwise = ConvBnAct(mid, mid, kernelsize, stride=stride, groups=mid)
         self.se = SE(mid, int(inchannels/se_ratio))
         self.pointwise2 = nn.Sequential(
             SameConv(mid, outchannels, 1),
@@ -100,9 +102,10 @@ class MBblock(nn.Module):
                  is_skip, dc_ratio=(1-0.8), bn_momentum=0.90):
         super().__init__()
 
-        layers = []
-        layers.append(MBConv(inchannels, outchannels, expan, kernelsize, stride,
-                             se_ratio, is_skip, dc_ratio, bn_momentum))
+        layers = [
+            MBConv(inchannels, outchannels, expan, kernelsize,
+                   stride, se_ratio, is_skip, dc_ratio, bn_momentum)
+        ]
         while repeat-1:
             layers.append(MBConv(outchannels, outchannels, expan, kernelsize, 1,
                                  se_ratio, is_skip, dc_ratio, bn_momentum))
@@ -116,13 +119,13 @@ class MBblock(nn.Module):
 
 class EfficientNet(nn.Module):
     def __init__(self, width, depth, ratio, min_width=0, width_divisor=8,
-                 se_ratio=4, dc_ratio=(1-0.8), bn_momentum=0.90, num_class=100):
+                 se_ratio=4, dc_ratio=(1-0.8), bn_momentum=0.90, num_classes=100):
         super().__init__()
 
         def renew_width(x):
-            min = max(min_width, width_divisor)
+            min_ = max(min_width, width_divisor)
             x *= width
-            new_x = max(min, int((x + width_divisor/2) // width_divisor * width_divisor))
+            new_x = max(min_, int((x + width_divisor/2) // width_divisor * width_divisor))
 
             if new_x < 0.9 * x:
                 new_x += width_divisor
@@ -154,7 +157,7 @@ class EfficientNet(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Dropout(ratio)
         )
-        self.FC = nn.Linear(renew_width(1280), num_class)
+        self.FC = nn.Linear(renew_width(1280), num_classes)
         #print("initing weights")
 
         self.init_weights()
@@ -176,10 +179,27 @@ class EfficientNet(nn.Module):
         out = self.FC(out)
         return out
 
+# TODO: 파라미터 인자값 확인
+def efficientnet_b0():
+    return EfficientNet(num_classes=100, width=1.0, depth=1.0, bn_momentum=0.9, ratio=0.2)
 
-def efficientnet(width, depth, num_class=100, bn_momentum=0.90, ratio=0.2):
-    return EfficientNet(width=width,
-                        depth=depth,
-                        num_class=num_class,
-                        bn_momentum=bn_momentum,
-                        ratio=ratio)
+def efficientnet_b1():
+    return EfficientNet(num_classes=100, width=1.0, depth=1.1, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b2():
+    return EfficientNet(num_classes=100, width=1.1, depth=1.2, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b3():
+    return EfficientNet(num_classes=100, width=1.2, depth=1.4, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b4():
+    return EfficientNet(num_classes=100, width=1.4, depth=1.8, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b5():
+    return EfficientNet(num_classes=100, width=1.6, depth=2.2, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b6():
+    return EfficientNet(num_classes=100, width=1.8, depth=2.6, bn_momentum=0.9, ratio=0.2)
+
+def efficientnet_b7():
+    return EfficientNet(num_classes=100, width=2.0, depth=3.1, bn_momentum=0.9, ratio=0.2)

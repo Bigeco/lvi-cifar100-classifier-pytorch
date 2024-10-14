@@ -3,7 +3,7 @@ from timm.models.swin_transformer import SwinTransformer
 
 
 class SparseSwin(nn.Module):
-    def __init__(self, num_classes=100, depths=[2, 2, 6, 2], num_heads=[3, 6, 12, 24]):
+    def __init__(self, num_classes=100, depths=(2, 2, 6, 2), num_heads=(3, 6, 12, 24)):
         super(SparseSwin, self).__init__()
         self.swin = SwinTransformer(
             img_size=32,
