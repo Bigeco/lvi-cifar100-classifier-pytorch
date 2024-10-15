@@ -1,6 +1,9 @@
-import torch
-import torch.nn as nn
 from tqdm import tqdm
+import os
+import argparse
+from datasets import *
+from config import *
+
 
 #Superclass mapping
 superclass_mapping = {
@@ -90,9 +93,39 @@ def print_predicted_results(model, loader, criterion, device):
     print(f"Test Top-1 Super Accuracy: {test_superclass_acc * 100:.2f}%")
 
 
-# TODO 1: 이미지 그리는 함수 불러오는 옵션 추가
+def main(args):
+    # loader 정의
+    _, _, test_loader = get_dataloaders(args.root,
+                                        args.select_transform,
+                                        args.train_ratio,
+                                        args.batch_size,
+                                        args.num_workers,
+                                        args.split)
 
-# TODO 2: 다음 아래 명령어가 가능하도록 할 것
-# python evaluate.py --model-path path/to/saved/model.pth
+    if os.path.isfile(args.model_path):
+        model = MODEL_DICT[args.model_name]()
+        checkpoint = torch.load(args.model_path)
+        model.load_state_dict(checkpoint['state_dict'])
+    else:
+        raise ValueError(f"No checkpoint found at model path: {args.model_path}")
+
+    if args.criterion_name == "FocalLoss":
+        criterion = CRITERION_DICT[args.criterion_name](args.gamma)
+    elif args.criterion_name == "LabelSmoothingLoss":
+        criterion = CRITERION_DICT[args.criterion_name](args.label_smoothing)
+    elif args.criterion_name == "CrossEntropyLoss":
+        criterion = CRITERION_DICT[args.criterion_name]()
+    else:
+        raise ValueError(f"Unsupported model: {args.criterion_name}")
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print_predicted_results(model, test_loader, criterion, device)
+
+
 if __name__ == "__main__":
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-path", type=str, default="./best_shake_pyramidnet_110_epoch_150.pth")
+    parser.add_argument("--model_name", type=str, default="shake_pyramidnet_110")
+    parser.add_argument("--criterion_name", type=str, default="CrossEntropyLoss")
+    args = parser.parse_args()
+    main(args)
