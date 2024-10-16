@@ -2,9 +2,9 @@ import torch.nn as nn
 from timm.models.swin_transformer import SwinTransformer
 
 
-class SparseSwin(nn.Module):
+class Swin(nn.Module):
     def __init__(self, num_classes=100, depths=(2, 2, 6, 2), num_heads=(3, 6, 12, 24)):
-        super(SparseSwin, self).__init__()
+        super(Swin, self).__init__()
         self.swin = SwinTransformer(
             img_size=32,
             patch_size=2,
@@ -30,24 +30,24 @@ class SparseSwin(nn.Module):
 
 
 def swin1():
-    return SparseSwin()
+    return Swin()
 
 def swin2():
-    return SparseSwin(depths=[2, 2, 4, 2],
+    return Swin(depths=[2, 2, 4, 2],
                       num_heads=[3, 6, 12, 24])
 
 def swin3():
-    return SparseSwin(depths=[2, 2],
+    return Swin(depths=[2, 2],
                       num_heads=[12, 12])
 
 def swin4():
-    return SparseSwin(depths=[2, 2],
+    return Swin(depths=[2, 2],
                       num_heads=[12, 24])
 
 def swin5():
-    return SparseSwin(depths=[2, 2],
+    return Swin(depths=[2, 2],
                       num_heads=[20, 100])
 
 def swin6():
-    return SparseSwin(depths=[3, 3],
+    return Swin(depths=[3, 3],
                       num_heads=[12, 24])

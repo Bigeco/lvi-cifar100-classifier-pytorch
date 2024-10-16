@@ -96,7 +96,7 @@ def main(args):
 
 
     # scheduler 정의
-    if args.scheduler_name in ["MultiStepLR", "CombinedScheduler"]:
+    if args.use_sched and args.scheduler_name in ["MultiStepLR", "CombinedScheduler"]:
         scheduler = SCHEDULER_DICT[args.scheduler_name](optimizer, args.epochs)
     else:
         scheduler = SCHEDULER_DICT[args.scheduler_name](optimizer)
@@ -182,7 +182,8 @@ def main(args):
                 test_acc += utils.accuracy(outputs, labels).item()
                 test_n += labels.size(0)
 
-        scheduler.step(test_loss / test_n)
+        if args.use_sched:
+            scheduler.step(test_loss / test_n)
         test_top1_acc = test_acc / test_n
         lst_test_loss.append(test_loss / test_n)
 
@@ -243,6 +244,7 @@ if __name__ == "__main__":
 
     # For Networks
     parser.add_argument("--model_name", type=str, default="shake_pyramidnet_110")
+    parser.add_argument("--dropout_rate", type=int, default=0.2)
 
     # For Loss Function
     parser.add_argument("--criterion_name", type=str, default="CrossEntropyLoss")
@@ -262,6 +264,7 @@ if __name__ == "__main__":
 
     # For Scheduler
     parser.add_argument("--scheduler_name", type=str, default="CombinedScheduler")
+    parser.add_argument("--use_sched", type=bool, default=True)
 
     # For Visualization
     # parser.add_argument("--plot_count", type=bool, default=False)
