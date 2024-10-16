@@ -4,7 +4,7 @@ from models.EfficientNet import *
 from models.DenseNet import *
 from models.ViT import *
 from models.WideResNet import *
-from models.SparseSwin import *
+from models.Swin import *
 from models.ShakePyramidNet import *
 
 from losses import *
