@@ -124,7 +124,7 @@ python src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer_
 
 ### 7. Swin
 ```sh
-python src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --eta_min 1e-6 --select_transform ('RandomCrop', 'RandomHorizontalFlip') --split True --train_ratio 0.8
+python src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform ('RandomCrop', 'RandomHorizontalFlip') --split True --train_ratio 0.8
 ```
 
 ### 8. PyramidNet110 with Shake-Drop (Best Top-1) 

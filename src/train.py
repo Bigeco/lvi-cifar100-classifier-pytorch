@@ -28,16 +28,18 @@ def seed_everything(seed):
 def main(args):
     seed_everything(args.seed)  # Seed 고정
 
+    select_transform = tuple(args.select_transform.split(','))
+
     # loader 정의
     train_loader, valid_loader, test_loader = get_dataloaders(
                                                 args.root,
-                                                args.select_transform,
+                                                select_transform,
                                                 args.train_ratio,
                                                 args.batch_size,
                                                 args.num_workers,
                                                 args.prefetch_factor,
                                                 args.split)
-    if not valid_loader:
+    if valid_loader:
         test_loader = valid_loader
 
     # 모델 선택 및 초기화
@@ -104,6 +106,7 @@ def main(args):
 
     # Checkpoint에서 모델 및 옵티마이저 상태 불러오기
     start_epoch = 0
+    checkpoint = None
     if args.resume_epoch > 0:
         checkpoint_path = os.path.join(args.checkpoint, f"{args.resume_epoch}.tar")
         if os.path.isfile(checkpoint_path):
@@ -209,7 +212,8 @@ def main(args):
         plot_loss_curves(lst_train_loss, lst_test_loss)
 
     # 메모리 정리
-    del checkpoint
+    if checkpoint:
+        del checkpoint
     gc.collect()
     torch.cuda.empty_cache()
 
@@ -218,7 +222,6 @@ def main(args):
     print_predicted_results(best_model, test_loader, criterion, device)
 
     # 메모리 정리
-    del checkpoint
     gc.collect()
     torch.cuda.empty_cache()
 
@@ -236,7 +239,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=32)
     parser.add_argument("--root", type=str, default="./data")
-    parser.add_argument("--select_transform", type=tuple, default=('RandomCrop', 'RandomHorizontalFlip', 'Cutout'))
+    parser.add_argument("--select_transform", type=str, default='RandomCrop,RandomHorizontalFlip,Cutout')
     parser.add_argument("--train_ratio", type=float, default=0.9)
     parser.add_argument("--split", type=bool, default=False)
     parser.add_argument("--grad_clip", type=float, default=0)
