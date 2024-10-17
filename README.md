@@ -61,7 +61,7 @@ To ensure reproducibility, we use a fixed random seed. The default random seed i
 To change the random seed, use the `--seed` argument when running the training script:
 
 ```sh
-python src/train.py --seed 123 [other arguments]
+python src/train.py --seed 123 
 ```
 
 We use the following code to set the random seed:
@@ -94,37 +94,37 @@ To train the model:
 
 ### 1. ResNet9
 ```sh
-python src/train.py --model_name "resnet9" --epochs 240 --batch_size 128 --optimizer_name "Adam" --lr 0.005 --scheduler_name "OneCycleLR" --select_transform ('RandomCrop', 'RandomHorizontalFlip', 'ColorJitter') --mixup True
+python src/train.py --model_name "resnet9" --epochs 240 --batch_size 128 --optimizer_name "Adam" --lr 0.005 --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True
 ```
 
 ### 2. ResNet18
 ```sh
-python src/train.py --model_name "resnet18" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.008 --criterion_name "LabelSmoothingLoss" --scheduler_name "OneCycleLR" --select_transform ('RandomCrop', 'RandomHorizontalFlip', 'ColorJitter') --mixup True --split True --train_ratio 0.8
+python src/train.py --model_name "resnet18" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.008 --criterion_name "LabelSmoothingLoss" --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 3. ResNeXt50
 ```sh
-python src/train.py --model_name "resnext50" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform ('RandomCrop', 'RandomHorizontalFlip', 'ColorJitter') --mixup True --split True --train_ratio 0.8
+python src/train.py --model_name "resnext50" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 4. Densenet201
 ```sh
-python src/train.py --model_name "densenet201" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform () --split True --train_ratio 0.8
+python src/train.py --model_name "densenet201" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
 ```
 
 ### 5. WideResNet28_10
 ```sh
-python src/train.py --model_name "wide_resnet28_10" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform ('RandomCrop', 'RandomHorizontalFlip', 'ColorJitter') --mixup True --split True --train_ratio 0.8
+python src/train.py --model_name "wide_resnet28_10" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 6. ViT
 ```sh
-python src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform () --split True --train_ratio 0.8
+python src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
 ```
 
 ### 7. Swin
 ```sh
-python src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform ('RandomCrop', 'RandomHorizontalFlip') --split True --train_ratio 0.8
+python src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform 'RandomCrop,RandomHorizontalFlip' --split True --train_ratio 0.8
 ```
 
 ### 8. PyramidNet110 with Shake-Drop (Best Top-1) 
@@ -177,7 +177,7 @@ PyramidNet with Shake-Drop achieved Best Top-1 accuracy
 
 | Model       | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
 |-------------|------|----------------|----------------|----------------------|
-| PyramidNet  | 1.31 | 83.98%         | 97.09%         | 91.13%               |
+| PyramidNet  | 1.30 | 84.32%         | 96.79%         | 91.44%               |
 
 
 ## Team Members
@@ -185,7 +185,7 @@ PyramidNet with Shake-Drop achieved Best Top-1 accuracy
 This project was developed collaboratively by the following team members:
 
 <a href="https://github.com/bigeco/lvi-cifar100-classifier-pytorch/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=bigeco/lvi-cifar100-classifier-pytorch" />
+  <img src="https://contrib.rocks/image?repo=bigeco/lvi-cifar100-classifier-pytorch"  alt=""/>
 </a>
 
 - **Lee Songeun**
