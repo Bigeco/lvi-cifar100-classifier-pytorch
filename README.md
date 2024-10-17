@@ -94,42 +94,42 @@ To train the model:
 
 ### 1. ResNet9
 ```sh
-python src/train.py --model_name "resnet9" --epochs 240 --batch_size 128 --optimizer_name "Adam" --lr 0.005 --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True
+python3 src/train.py --model_name "resnet9" --epochs 240 --batch_size 128 --optimizer_name "Adam" --lr 0.005 --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True
 ```
 
 ### 2. ResNet18
 ```sh
-python src/train.py --model_name "resnet18" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.008 --criterion_name "LabelSmoothingLoss" --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
+python3 src/train.py --model_name "resnet18" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.008 --criterion_name "LabelSmoothingLoss" --scheduler_name "OneCycleLR" --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 3. ResNeXt50
 ```sh
-python src/train.py --model_name "resnext50" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
+python3 src/train.py --model_name "resnext50" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 4. Densenet201
 ```sh
-python src/train.py --model_name "densenet201" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
+python3 src/train.py --model_name "densenet201" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
 ```
 
 ### 5. WideResNet28_10
 ```sh
-python src/train.py --model_name "wide_resnet28_10" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
+python3 src/train.py --model_name "wide_resnet28_10" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform 'RandomCrop,RandomHorizontalFlip,ColorJitter' --mixup True --split True --train_ratio 0.8
 ```
 
 ### 6. ViT
 ```sh
-python src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
+python3 src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer_name "Adam" --lr 0.001 --select_transform '' --split True --train_ratio 0.8
 ```
 
 ### 7. Swin
 ```sh
-python src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform 'RandomCrop,RandomHorizontalFlip' --split True --train_ratio 0.8
+python3 src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform 'RandomCrop,RandomHorizontalFlip' --split True --train_ratio 0.8
 ```
 
 ### 8. PyramidNet110 with Shake-Drop (Best Top-1) 
 ```sh
-python src/train.py 
+python3 src/train.py 
 ```
 
 
@@ -137,7 +137,7 @@ python src/train.py
 To predict and print test accuracy of the model:
 
 ```sh
-python src/evaluate.py --model-path "path/to/saved/model.pth"
+python3 src/evaluate.py --model-path "path/to/saved/model.pth"
 ```
 
 ## Dataset
@@ -156,8 +156,6 @@ The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` l
 ### ResNeXt29 Architecture 
 ![ResNeXt29 Architecture](./src/images/resnext29.png)
 
-### PyramidNet110 Architecture
-
 
 ## Training for Best Top-1 accuracy
 
@@ -166,10 +164,10 @@ and achieved the highest top-1 accuracy of 83.93% among all models
 on the CIFAR-100 dataset.
 
 - **Optimizer**: SGD
-- **Learning Rate**: 0.1 with MultiStep and ReduceLROnPlateau
+- **Learning Rate**: 0.1 with MultiStepLR and ReduceLROnPlateau
 - **Batch Size**: 128
 - **Epochs**: 200
-- **Data Augmentation**: Random crop, Random horizontal flip, Cutout
+- **Data Augmentation**: Random crop, Random horizontal flip, AutoAugment, Cutout
 - **loss function**: LabelSmoothingLoss
 
 ## Result
@@ -177,7 +175,7 @@ PyramidNet with Shake-Drop achieved Best Top-1 accuracy
 
 | Model       | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
 |-------------|------|----------------|----------------|----------------------|
-| PyramidNet  | 1.30 | 84.32%         | 96.79%         | 91.44%               |
+| PyramidNet  | 1.26 | 85.31%         | 97.68%         | 92.29%               |
 
 
 ## Team Members
