@@ -53,7 +53,7 @@ def evaluate(model, loader, criterion, device):
 
     # CIFAR-100 superclass mapping
     with torch.no_grad():
-        for inputs, labels in tqdm(loader, desc=f"Validating: "):
+        for inputs, labels in tqdm(loader, desc=f"Testing: "):
             inputs = inputs.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
             outputs = model(inputs)
