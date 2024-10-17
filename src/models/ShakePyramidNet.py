@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+
 
 
 class ShakeDropFunction(torch.autograd.Function):

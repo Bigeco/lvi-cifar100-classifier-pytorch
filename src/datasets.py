@@ -86,7 +86,7 @@ def get_datasets(root, select_transform, train_ratio, split=True):
         valid_dataset.transform = test_transform
         return train_dataset, valid_dataset, test_dataset
     else:
-        return dataset, test_dataset
+        return dataset, None, test_dataset
 
 
 def get_dataloaders(root, select_transform, train_ratio, batch_size, num_workers, prefetch_factor, split=True):

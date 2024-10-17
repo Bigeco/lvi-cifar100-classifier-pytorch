@@ -35,6 +35,7 @@ def main(args):
                                                 args.train_ratio,
                                                 args.batch_size,
                                                 args.num_workers,
+                                                args.prefetch_factor,
                                                 args.split)
     if not valid_loader:
         test_loader = valid_loader
@@ -241,6 +242,7 @@ if __name__ == "__main__":
     parser.add_argument("--grad_clip", type=float, default=0)
     parser.add_argument("--mixup", type=bool, default=False)
     parser.add_argument("--limit_24h", type=bool, default=False)
+    parser.add_argument("--prefetch_factor", type=int, default=4)
 
     # For Networks
     parser.add_argument("--model_name", type=str, default="shake_pyramidnet_110")
@@ -260,7 +262,6 @@ if __name__ == "__main__":
     parser.add_argument("--betas", type=tuple, default=(0.9, 0.999)) # Adam, AdamW
     parser.add_argument("--eps", type=float, default=1e-08) # Adam, AdamW
     parser.add_argument("--rho", type=float, default=0.05) # SAM
-    parser.add_argument()
 
     # For Scheduler
     parser.add_argument("--scheduler_name", type=str, default="CombinedScheduler")
