@@ -235,16 +235,16 @@ if __name__ == "__main__":
 
     # For Training
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--epochs", type=int, default=150)
+    parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=32)
     parser.add_argument("--root", type=str, default="./data")
-    parser.add_argument("--select_transform", type=str, default='RandomCrop,RandomHorizontalFlip,Cutout')
+    parser.add_argument("--select_transform", type=str, default='RandomCrop,RandomHorizontalFlip,AutoAugment,Cutout')
     parser.add_argument("--train_ratio", type=float, default=0.9)
     parser.add_argument("--split", type=bool, default=False)
     parser.add_argument("--grad_clip", type=float, default=0)
     parser.add_argument("--mixup", type=bool, default=False)
-    parser.add_argument("--limit_24h", type=bool, default=False)
+    parser.add_argument("--limit_24h", type=bool, default=True)
     parser.add_argument("--prefetch_factor", type=int, default=4)
 
     # For Networks
@@ -252,7 +252,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout_rate", type=int, default=0.2)
 
     # For Loss Function
-    parser.add_argument("--criterion_name", type=str, default="CrossEntropyLoss")
+    parser.add_argument("--criterion_name", type=str, default="LabelSmoothingLoss")
     parser.add_argument("--gamma", type=float, default=2.0) #  Focal Loss
     parser.add_argument("--label_smoothing", type=float, default=0.1) # Label Smoothing Loss
 
