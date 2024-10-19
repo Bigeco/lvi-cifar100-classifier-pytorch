@@ -132,14 +132,6 @@ python3 src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimiz
 python3 src/train.py 
 ```
 
-
-
-To predict and print test accuracy of the model:
-
-```sh
-python3 src/evaluate.py --model-path "path/to/saved/model.pth"
-```
-
 ## Dataset
 
 The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` library. It includes:
