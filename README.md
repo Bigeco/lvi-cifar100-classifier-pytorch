@@ -61,7 +61,7 @@ To ensure reproducibility, we use a fixed random seed. The default random seed i
 To change the random seed, use the `--seed` argument when running the training script:
 
 ```sh
-python src/train.py --seed 123 
+python3 src/train.py --seed 123 
 ```
 
 We use the following code to set the random seed:
@@ -127,7 +127,7 @@ python3 src/train.py --model_name "vit" --epochs 100 --batch_size 64 --optimizer
 python3 src/train.py --model_name "swin6" --epochs 100 --batch_size 64 --optimizer_name "AdamW" --lr 0.001 --weight_decay 0.05 --scheduler_name "CosineAnnealingLR" --select_transform 'RandomCrop,RandomHorizontalFlip' --split True --train_ratio 0.8
 ```
 
-### 8. PyramidNet110 with Shake-Drop (Best Top-1) 
+### 8. PyramidNet110 with Shake-Drop (Best Score) 
 ```sh
 python3 src/train.py 
 ```
@@ -157,10 +157,10 @@ The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` l
 ![ResNeXt29 Architecture](./src/images/resnext29.png)
 
 
-## Training for Best Top-1 accuracy
+## Training for Best Score
 
 We implemented PyramidNet with ShakeDrop regularization 
-and achieved the highest top-1 accuracy of 83.93% among all models 
+and achieved the highest top-1 accuracy of 85.31% among all models 
 on the CIFAR-100 dataset.
 
 - **Optimizer**: SGD
