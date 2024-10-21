@@ -87,7 +87,7 @@ def print_predicted_results(model, loader, criterion, device):
     test_loss, test_top1_acc, test_top5_acc, test_superclass_acc = \
         evaluate(model, loader, criterion, device)
 
-    print(f"Test Loss: {test_loss:.2f}%")
+    print(f"Test Loss: {test_loss:.2f}")
     print(f"Test Top-1 Accuracy: {test_top1_acc * 100:.2f}%")
     print(f"Test Top-5 Accuracy: {test_top5_acc * 100:.2f}%")
     print(f"Test Top-1 Super Accuracy: {test_superclass_acc * 100:.2f}%")
@@ -104,7 +104,7 @@ def main(args):
 
     if os.path.isfile(args.model_path):
         model = MODEL_DICT[args.model_name]()
-        checkpoint = torch.load(args.model_path)
+        checkpoint = torch.load(args.model_path, weights_only=True)
         model.load_state_dict(checkpoint['state_dict'])
     else:
         raise ValueError(f"No checkpoint found at model path: {args.model_path}")
@@ -124,8 +124,15 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-path", type=str, default="./best_shake_pyramidnet_110_epoch_150.pth")
+    parser.add_argument("--model_path", type=str, default="./best_shake_pyramidnet_110_epoch_150.pth")
     parser.add_argument("--model_name", type=str, default="shake_pyramidnet_110")
-    parser.add_argument("--criterion_name", type=str, default="CrossEntropyLoss")
+    parser.add_argument("--criterion_name", type=str, default="LabelSmoothingLoss")
+    parser.add_argument("--select_transform", type=str, default='RandomCrop,RandomHorizontalFlip,AutoAugment,Cutout')
+    parser.add_argument("--train_ratio", type=float, default=0.9)
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--num_workers", type=int, default=32)
+    parser.add_argument("--split", type=bool, default=False)
+    parser.add_argument("--root", type=str, default="./data")
+    parser.add_argument("--label_smoothing", type=float, default=0.1)  # Label Smoothing Loss
     args = parser.parse_args()
     main(args)
