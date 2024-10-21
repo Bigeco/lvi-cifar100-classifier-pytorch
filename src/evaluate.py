@@ -100,6 +100,7 @@ def main(args):
                                         args.train_ratio,
                                         args.batch_size,
                                         args.num_workers,
+                                        args.prefetch_factor,
                                         args.split)
 
     if os.path.isfile(args.model_path):
@@ -131,6 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_ratio", type=float, default=0.9)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--num_workers", type=int, default=32)
+    parser.add_argument("--prefetch_factor", type=int, default=4)
     parser.add_argument("--split", type=bool, default=False)
     parser.add_argument("--root", type=str, default="./data")
     parser.add_argument("--label_smoothing", type=float, default=0.1)  # Label Smoothing Loss
