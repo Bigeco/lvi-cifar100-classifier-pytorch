@@ -22,8 +22,9 @@ def seed_everything(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
 
 def main(args):
     seed_everything(args.seed)  # Seed 고정
@@ -204,7 +205,7 @@ def main(args):
         if test_top1_acc > best_top1_acc:
             best_top1_acc = test_top1_acc
             best_epoch = epoch
-            print(f"Best model: Epoch {epoch}/{args.epochs} - Accuracy: {best_top1_acc:.2f}%")
+            print(f"Best model: Epoch {epoch}/{args.epochs} - Accuracy: {best_top1_acc*100:.2f}%")
             torch.save(model.state_dict(), f"best_{args.model_name}_epoch_{epoch}.pth")
 
 
@@ -230,7 +231,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--label", type=int, default=100)
     parser.add_argument("--checkpoint", type=str, default="./checkpoint")
-    parser.add_argument("--snapshot_interval", type=int, default=10)
+    parser.add_argument("--snapshot_interval", type=int, default=1)
     parser.add_argument("--resume_epoch", type=int, default=0, help="Epoch to resume from. 0 starts from scratch.")
 
     # For Training

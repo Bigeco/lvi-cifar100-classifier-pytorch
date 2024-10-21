@@ -45,7 +45,7 @@ def get_transform(select_transform=None):
     train_transforms = []
     if select_transform:
         if 'RandomCrop' in select_transform:
-            train_transforms.append(transforms.RandomCrop(32, padding=4, padding_mode='reflect'))
+            train_transforms.append(transforms.RandomCrop(32, padding=4))
         if 'RandomHorizontalFlip' in select_transform:
             train_transforms.append(transforms.RandomHorizontalFlip())
         if 'ColorJitter' in select_transform:
