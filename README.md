@@ -164,11 +164,11 @@ on the CIFAR-100 dataset.
 - **loss function**: LabelSmoothingLoss
 
 ## Result
-PyramidNet with Shake-Drop achieved Best Score.
+PyramidNet with Shake-Drop achieved Best Score. (seed=42)
 
 | Model       | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
 |-------------|------|----------------|----------------|----------------------|
-| PyramidNet  | 1.26 | 85.31%         | 97.68%         | 92.29%               |
+| PyramidNet  | 1.26 | 83.42%         | 97.42%         | 91.14%               |
 
 
 ## Team Members
