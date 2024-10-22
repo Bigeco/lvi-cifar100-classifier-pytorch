@@ -153,7 +153,7 @@ The CIFAR-100 dataset is automatically downloaded by the PyTorch `torchvision` l
 ## Training for Best Score
 
 We implemented PyramidNet with ShakeDrop regularization 
-and achieved the highest top-1 accuracy of 85.31% among all models 
+and achieved the highest top-1 accuracy of 83.42% among all models 
 on the CIFAR-100 dataset.
 
 - **Optimizer**: SGD
