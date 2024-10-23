@@ -163,14 +163,12 @@ on the CIFAR-100 dataset.
 - **Data Augmentation**: Random crop, Random horizontal flip, AutoAugment, Cutout
 - **loss function**: LabelSmoothingLoss
 
-## Results
+## Result
 PyramidNet with Shake-Drop achieved Best Score. 
 
 | Model      | Seed | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
 |------------|------|------|----------------|----------------|----------------------|
 | PyramidNet |  42  | 1.26 |     83.42%     |     97.42%     |        91.14%        |
-| PyramidNet |  14  |      |                |                |                      |
-| PyramidNet |  75  |      |                |                |                      |
 
 ## Team Members
 
