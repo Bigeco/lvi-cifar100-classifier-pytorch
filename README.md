@@ -166,10 +166,9 @@ on the CIFAR-100 dataset.
 ## Result
 PyramidNet with Shake-Drop achieved Best Score. (seed=42)
 
-| Model       | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
-|-------------|------|----------------|----------------|----------------------|
-| PyramidNet  | 1.26 | 83.42%         | 97.42%         | 91.14%               |
-
+| Model      | Seed | Loss | Top-1 Accuracy | Top-5 Accuracy | Super Top-1 Accuracy |
+|------------|------|------|----------------|----------------|----------------------|
+| PyramidNet |  42  | 1.26 | 83.42%         | 97.42%         | 91.14%               |
 
 ## Team Members
 
